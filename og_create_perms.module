@@ -6,10 +6,30 @@
  */
 function og_create_perms_node_access($node, $op, $account) {
   $result = NODE_ACCESS_IGNORE;
-  $gids = array_values(og_get_context_by_url()); 
+  
+  // Check for a couple of different functions which may be available to get group
+  // gids, depending on modules available and versions used, query as last resort
+
+  // Use og_context 7.x-2.x function if available to get gids
+  if (function_exists('og_context_handler_url')) {
+    $gids = array_values(og_context_handler_url());
+  // Use og 7.x-1.x function if available to get gids
+  } elseif (function_exists('og_get_context_by_url')) {
+    $gids = array_values(og_get_context_by_url());
+  // If neither above function is available, do a direct query
+  } else {
+    $result = db_select('og', 'og')
+      ->fields('og', array('gid'))
+      ->execute();
+    $gids = array();
+    foreach ($result as $record) {
+      $gids[] = $record->gid;
+    }
+  }
+
   $type = is_string($node) ? $node : $node->type;
   if ($op == 'create' && in_array($type, og_create_perms_list_bundles())) {
-    foreach (og_get_context_by_url() as $gid) {
+    foreach ($gids as $gid) {
       // loop through any of the provided gids, and only allow access if we can post to all of them
       $access = true; 
       if (!og_user_access($gid, 'create ' . $type . ' content', $account)) {
