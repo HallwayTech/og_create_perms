@@ -11,8 +11,12 @@ function og_create_perms_node_access($node, $op, $account) {
   // gids, depending on modules available and versions used, query as last resort
 
   // Use og_context 7.x-2.x function if available to get gids
+  $gids = array();
   if (function_exists('og_context_handler_url')) {
-    $gids = array_values(og_context_handler_url());
+    $context = og_context_handler_url();
+    if (!empty($context)) {
+      $gids = array_values($context);
+    }    
   // Use og 7.x-1.x function if available to get gids
   } elseif (function_exists('og_get_context_by_url')) {
     $gids = array_values(og_get_context_by_url());
