@@ -78,12 +78,13 @@ function og_create_perms_field_attach_validate($entity_type, $entity, &$errors) 
     
     if (!$items = $entity->{$field_name}[$language_code]) {
       // if we don't have any items, initialise an array with a null entry 
-      $items = array( 0 => array( 'gid' => null ));
+      $items = array( 0 => array( 'target_id' => null ));
     }
       // Make sure we are a member of all attached groups 
     foreach ($items as $delta => $group) {
-      if (is_null($group['gid'])) {
-        // null gid = global context
+      $gid = $group['target_id'];
+      if (is_null($gid)) {
+        // null target_id = global context
         if (! user_access('create ' . $entity->type . ' content', $account)) {
           $errors[$field_name][$language_code][$delta][] = array(  
             'error' => 'og_create_perms:No global create permissions', 
@@ -92,15 +93,14 @@ function og_create_perms_field_attach_validate($entity_type, $entity, &$errors) 
           );
         }
       }
-      else if (og_is_member($group['gid'], 'user', $account)) {
+      else if (og_is_member($entity_type, $gid, 'user', $account)) {
           // have we got permission to create within this group
           // og_node_access does not support a create permission, so we use og_user_access
-          if (!og_user_access($group['gid'], 'create '. $entity->type .' content', $account)) {
-            $group_entity = og_load_entity_from_group($group['gid']);
+          if (!og_user_access($entity_type, $gid, 'create '. $entity->type .' content', $account)) {
             $errors[$field_name][$language_code][$delta][] = array(
               'error' => 'og_create_perms:content type restriction', 
-              'message' => t('You are not permitted to create %type content in %group', 
-                array('%type' => $entity->type, '%group' => $group_entity->title)) //TODO: best way to get title ?  
+              'message' => t('You are not permitted to create %type content in that group', 
+                array('%type' => $entity->type)) //TODO: best way to get title ?  
             );
           }
       } 
